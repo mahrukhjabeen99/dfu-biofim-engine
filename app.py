@@ -1,28 +1,24 @@
-
 import streamlit as st
 import pandas as pd
-import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
-import os
 
-st.title("🔬 DFU Biofilm Analytics Engine")
+st.title("🧬 DFU Biofilm Research Engine")
+st.markdown("### Real-Time Transcriptomic Analysis of DFU Biofilm")
 
-# Load data
-if os.path.exists("counts.csv"):
-    df = pd.read_csv("counts.csv")
-    st.success("Data loaded successfully.")
-else:
-    st.warning("Please upload counts.csv to GitHub.")
+# Load your actual research data
+@st.cache_data
+def load_data():
+    return pd.read_csv("authentic_results.csv")
 
-# Inputs
-staph = st.number_input("S. aureus Load", value=1000)
-zeta = st.slider("Zeta Potential (mV)", -80.0, 80.0, 0.0)
+df = load_data()
 
-# Physics calculation
-dist = np.linspace(1, 50, 100)
-v_total = -1.5e-20 / (12 * np.pi * (dist * 1e-9)**2) + (52.0 * zeta * 0.15 * np.exp(-1.2 * dist))
+# Display Data
+st.write("### Quantitative Gene Expression Results")
+st.dataframe(df)
 
-# Plot
-fig, ax = plt.subplots()
-ax.plot(dist, v_total)
+# Visualize Data
+st.write("### Gene Expression Fold Change Distribution")
+fig, ax = plt.subplots(figsize=(10, 5))
+sns.histplot(df['Log2FC'], bins=30, kde=True, color='purple')
 st.pyplot(fig)
