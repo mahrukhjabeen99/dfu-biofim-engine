@@ -1,49 +1,42 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from scipy import stats
+import seaborn as sns
+import matplotlib.pyplot as plt
+import plotly.express as px
 
-st.title("🧬 DFU Biofilm Research Engine: Robust Analysis")
+st.set_page_config(layout="wide")
+st.title("🧬 DFU Biofilm: Multidimensional Interaction Assessment")
 
+# 1. LOAD DATA
 @st.cache_data
-def load_and_analyze():
-    df = pd.read_csv("all_gene_counts_2.tsv", sep='\t')
-    
-    # 1. Clean data: Ensure columns are numbers
-    control_cols = ['X1', 'X2', 'X3'] 
-    treatment_cols = ['X4', 'X5', 'X6']
-    
-    for col in control_cols + treatment_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+def load_data():
+    return pd.read_csv("all_gene_counts_2.tsv", sep='\t')
 
-    # 2. Normalize: CPM
-    for col in control_cols + treatment_cols:
-        df[col] = (df[col] / df[col].sum()) * 1e6
+df = load_data()
 
-    # 3. Robust Statistical Engine
-    def calculate_p(row):
-        try:
-            # We filter out rows that are all zeros to prevent math errors
-            c_data = row[control_cols]
-            t_data = row[treatment_cols]
-            if c_data.sum() == 0 and t_data.sum() == 0:
-                return 1.0
-            _, p = stats.ttest_ind(c_data, t_data, equal_var=False)
-            return p
-        except:
-            return 1.0
+# 2. RESEARCHER INTERFACE
+st.sidebar.header("Multidimensional Assessment")
+gene_choice = st.sidebar.selectbox("Select Target Gene", df['gene_name'].unique())
+selected_df = df[df['gene_name'] == gene_choice]
 
-    df['log2FC'] = np.log2((df[treatment_cols].mean(axis=1) + 1) / (df[control_cols].mean(axis=1) + 1))
-    df['p_value'] = df.apply(calculate_p, axis=1)
-    df['sig_metric'] = -np.log10(df['p_value'].replace(0, 1e-300)) # Protect against log(0)
-    
-    return df
+# 3. INTERACTION VISUALIZATION
+col1, col2 = st.columns([1, 2])
 
-df = load_and_analyze()
+with col1:
+    st.subheader("Data Summary")
+    st.write(f"Targeting: {gene_choice}")
+    st.dataframe(selected_df.T)
 
-# 4. Dashboard
-st.write("### Statistically Validated Results")
-st.dataframe(df[['gene_name', 'log2FC', 'p_value']].sort_values('p_value'))
+with col2:
+    st.subheader("Bacterial-Polymer Interaction Landscape")
+    # Using Plotly for a professional, interactive 3D/Multivariate view
+    fig = px.scatter_3d(selected_df.melt(id_vars=['gene_name']), 
+                        x='variable', y='value', z='gene_name', 
+                        color='value', title="Biofilm Response Dynamics")
+    st.plotly_chart(fig, use_container_width=True)
 
-st.write("### Volcano Plot")
-st.scatter_chart(df, x='log2FC', y='sig_metric')
+# 4. STATISTICAL INTERACTION
+st.subheader("Correlative Assessment")
+fig2, ax2 = plt.subplots(figsize=(10, 4))
+sns.heatmap(selected_df.select_dtypes(include=['float', 'int']).corr(), annot=True, cmap="viridis")
+st.pyplot(fig2)
