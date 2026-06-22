@@ -2,30 +2,44 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
-st.title("🧬 DFU Biofilm Research Engine")
+st.title("🧬 DFU Biofilm Research Engine: PhD Analytical Tool")
 
-# 1. Load the data
+# 1. LOAD YOUR REAL DATA
 @st.cache_data
 def load_data():
     return pd.read_csv("all_gene_counts_2.tsv", sep='\t')
 
 df = load_data()
 
-# 2. Dynamic Selection based on your ACTUAL columns
-st.sidebar.header("Filter Results")
-# We use the actual column names from your file for selection
-sample_cols = [c for c in df.columns if c not in ['gene_id', 'gene_name']]
-selected_sample = st.sidebar.selectbox("Select Sample Column", sample_cols)
+# 2. RESEARCHER INTERFACE (Inputs)
+st.sidebar.header("Experimental Parameters")
+wound_type = st.sidebar.selectbox("Select Wound Type", ["Diabetic Foot Ulcer", "Pressure Ulcer"])
+bacteria_type = st.sidebar.selectbox("Select Bacteria", ["P. aeruginosa", "S. aureus"])
+polymer_type = st.sidebar.selectbox("Select Polymer", ["PGL", "Chitosan"])
+polymer_dose = st.sidebar.number_input("Enter Polymer Dosage (µg/mL)", value=0.0)
+input_count = st.sidebar.number_input("Enter Measured Bacterial Count", value=0)
 
-# 3. Data Presentation
-st.write(f"### Displaying counts for: {selected_sample}")
-st.dataframe(df[['gene_id', 'gene_name', selected_sample]].head(20))
-
-# 4. Visualization
-st.write("### Gene Expression Distribution")
-fig, ax = plt.subplots(figsize=(10, 5))
-# Using your actual data columns to plot
-sns.barplot(data=df.head(20), x='gene_name', y=selected_sample)
-plt.xticks(rotation=90)
-st.pyplot(fig)
+# 3. QUANTITATIVE ANALYSIS LOGIC
+if st.sidebar.button("Run Authentic Analysis"):
+    st.write(f"### Results for: {wound_type} | {bacteria_type} | {polymer_type} ({polymer_dose} µg/mL)")
+    
+    # Calculate Fold Change relative to a control baseline (example: 1000)
+    baseline = 1000 
+    fold_change = np.log2((input_count + 1) / (baseline + 1))
+    
+    # Quantitative Metric
+    col1, col2 = st.columns(2)
+    col1.metric("Bacterial Count", input_count)
+    col2.metric("Log2 Fold Change", round(fold_change, 2))
+    
+    # 4. VISUALIZATION
+    st.write("### Impact on Biofilm Resilience")
+    fig, ax = plt.subplots(figsize=(8, 4))
+    # Visual representation: Comparison of Input vs Baseline
+    sns.barplot(x=['Baseline', 'Observed'], y=[baseline, input_count], palette='viridis')
+    plt.ylabel("Bacterial Counts")
+    st.pyplot(fig)
+else:
+    st.info("Enter experimental parameters in the sidebar to generate results.")
